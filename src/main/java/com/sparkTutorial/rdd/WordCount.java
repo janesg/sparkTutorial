@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class WordCount {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         Logger.getLogger("org").setLevel(Level.ERROR);
         SparkConf conf = new SparkConf().setAppName("wordCounts").setMaster("local[3]");
@@ -50,13 +50,11 @@ public class WordCount {
         Map<String, Long> wordCounts = words.countByValue()
                 .entrySet()
                 .stream()
-                .sorted((Map.Entry<String, Long> o1, Map.Entry<String, Long> o2) -> {
-                    return o1.getValue().equals(o2.getValue()) ?
-                            o1.getKey().compareTo(o2.getKey())
-                            : o2.getValue().compareTo(o1.getValue());
-                })
-                .collect(
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                .sorted((Map.Entry<String, Long> o1, Map.Entry<String, Long> o2) ->
+                        o1.getValue().equals(o2.getValue()) ?
+                        o1.getKey().compareTo(o2.getKey()) : o2.getValue().compareTo(o1.getValue()))
+                .collect(Collectors
+                        .toMap(Map.Entry::getKey, Map.Entry::getValue,
                                 (e1, e2) -> e2,
                                 LinkedHashMap::new));
 
