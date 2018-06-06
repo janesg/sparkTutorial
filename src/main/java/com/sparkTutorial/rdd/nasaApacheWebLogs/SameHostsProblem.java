@@ -1,5 +1,14 @@
 package com.sparkTutorial.rdd.nasaApacheWebLogs;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class SameHostsProblem {
 
     public static void main(String[] args) throws Exception {
@@ -19,5 +28,23 @@ public class SameHostsProblem {
 
            Make sure the head lines are removed in the resulting RDD.
          */
+        Logger.getLogger("org").setLevel(Level.ERROR);
+        SparkConf conf = new SparkConf().setAppName("unionLog").setMaster("local[2]");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+
+        JavaRDD<String> julHosts =
+                sc.textFile("in/nasa_19950701.tsv")
+                        .filter(line -> !line.startsWith("host\tlogname"))
+                        .map(line -> line.split("\t")[0]);
+
+        JavaRDD<String> augHosts =
+                sc.textFile("in/nasa_19950801.tsv")
+                        .filter(line -> !line.startsWith("host\tlogname"))
+                        .map(line -> line.split("\t")[0]);
+
+        JavaRDD<String> sameHosts = julHosts.intersection(augHosts);
+
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss").format(new Date());
+        sameHosts.saveAsTextFile(String.format("out/nasa_logs_same_hosts-%s.csv", timestamp));
     }
 }
