@@ -23,6 +23,8 @@ public class PairRddFromTupleList {
 
         JavaPairRDD<String, Integer> pairRDD = sc.parallelizePairs(tuple);
 
-        pairRDD.coalesce(1).saveAsTextFile("out/pair_rdd_from_tuple_list");
+        // Is coalesce really necessary...it seems not
+//        pairRDD.coalesce(1).saveAsTextFile("out/pair_rdd_from_tuple_list");
+        pairRDD.saveAsTextFile("out/pair_rdd_from_tuple_list");
     }
 }

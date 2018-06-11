@@ -4,7 +4,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
+//import org.apache.spark.api.java.function.PairFunction;
 import scala.Tuple2;
 
 import java.util.Arrays;
@@ -12,7 +12,7 @@ import java.util.List;
 
 public class PairRddFromRegularRdd {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         SparkConf conf = new SparkConf().setAppName("create").setMaster("local[1]");
 
@@ -22,12 +22,19 @@ public class PairRddFromRegularRdd {
 
         JavaRDD<String> regularRDDs = sc.parallelize(inputStrings);
 
-        JavaPairRDD<String, Integer> pairRDD = regularRDDs.mapToPair(getPairFunction());
+//        JavaPairRDD<String, Integer> pairRDD = regularRDDs.mapToPair(getPairFunction());
+//
+//        pairRDD.coalesce(1).saveAsTextFile("out/pair_rdd_from_regular_rdd");
 
-        pairRDD.coalesce(1).saveAsTextFile("out/pair_rdd_from_regular_rdd");
+        JavaPairRDD<String, Integer> pairRDD = regularRDDs.mapToPair(s -> {
+            String[] strs = s.split(" ");
+            return new Tuple2<>(strs[0], Integer.valueOf(strs[1]));
+        });
+
+        pairRDD.saveAsTextFile("out/pair_rdd_from_regular_rdd");
     }
 
-    private static PairFunction<String, String, Integer> getPairFunction() {
-        return s -> new Tuple2<>(s.split(" ")[0], Integer.valueOf(s.split(" ")[1]));
-    }
+//    private static PairFunction<String, String, Integer> getPairFunction() {
+//        return s -> new Tuple2<>(s.split(" ")[0], Integer.valueOf(s.split(" ")[1]));
+//    }
 }

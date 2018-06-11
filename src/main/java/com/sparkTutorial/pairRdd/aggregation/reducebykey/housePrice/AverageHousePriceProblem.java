@@ -1,9 +1,21 @@
 package com.sparkTutorial.pairRdd.aggregation.reducebykey.housePrice;
 
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import scala.Tuple2;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class AverageHousePriceProblem {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         /* Create a Spark program to read the house data from in/RealEstate.csv,
            output the average price for houses with different number of bedrooms.
@@ -34,6 +46,48 @@ public class AverageHousePriceProblem {
 
            3, 1 and 2 mean the number of bedrooms. 325000 means the average price of houses with 3 bedrooms is 325000.
          */
+
+        Logger.getLogger("org").setLevel(Level.ERROR);
+        // Set master options:
+        //  - local     : 1 core
+        //  - local[2]  : 2 cores
+        //  - local[*]  : all cores available
+        SparkConf conf = new SparkConf().setAppName("airportsNotInUSA").setMaster("local[2]");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+
+        JavaRDD<String> houses = sc.textFile("in/RealEstate.csv");
+        JavaPairRDD<Integer, AvgCount> bedAvgCountPrice =
+                houses
+                        .filter(house -> !house.startsWith("MLS"))
+                        .mapToPair(house -> {
+                            String[] fields = house.split(",");
+                            return new Tuple2<>(Integer.valueOf(fields[3]),
+                                                new AvgCount(1, Double.valueOf(fields[2])));
+                        })
+                        .reduceByKey((avgCountX, avgCountY) ->
+                                new AvgCount(avgCountX.getCount() + avgCountY.getCount(),
+                                             avgCountX.getTotal() + avgCountY.getTotal()));
+
+        JavaPairRDD<Integer, Double> bedHousePriceAvg =
+                bedAvgCountPrice.mapValues(avgCount -> avgCount.getTotal() / avgCount.getCount());
+
+        // Extra challenge : display in reverse order of average price (highest to lowest)
+        for (Map.Entry<Integer, Double> entry :
+                bedHousePriceAvg.collectAsMap()
+                        .entrySet()
+                        .stream()
+                        .sorted((Map.Entry<Integer, Double> o1, Map.Entry<Integer, Double> o2) ->
+                                o1.getValue().equals(o2.getValue()) ?
+                                        o1.getKey().compareTo(o2.getKey()) : o2.getValue().compareTo(o1.getValue()))
+                        .collect(Collectors
+                                .toMap(Map.Entry::getKey, Map.Entry::getValue,
+                                        (e1, e2) -> e2,
+                                        LinkedHashMap::new))
+                        .entrySet()
+                ) {
+            System.out.println(String.format("Beds : %d \t - Av. Price : %,.2f", entry.getKey(), entry.getValue()));
+        }
+
     }
 
 }
