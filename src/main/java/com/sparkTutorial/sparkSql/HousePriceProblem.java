@@ -1,5 +1,10 @@
 package com.sparkTutorial.sparkSql;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.spark.sql.*;
+
+import static org.apache.spark.sql.functions.*;
 
 public class HousePriceProblem {
 
@@ -38,4 +43,42 @@ public class HousePriceProblem {
         |.............................................|
 
          */
+
+    private static final String LOCATION = "Location";
+    private static final String PRICE_SQ_FT = "Price SQ Ft";
+    private static final String PRICE = "Price";
+
+    public static void main(String[] args) {
+
+        Logger.getLogger("org").setLevel(Level.ERROR);
+        SparkSession session = SparkSession.builder().appName("HousePrice").master("local[1]").getOrCreate();
+
+        DataFrameReader dataFrameReader = session.read();
+
+        Dataset<Row> houses = dataFrameReader.option("header","true").csv("in/RealEstate.csv");
+
+        System.out.println("=== Print 10 records of houses table ===");
+        houses.show(10);
+
+        System.out.println("=== Cast the price and price per sq ft to integer ===");
+        Dataset<Row> castedHouses = houses
+                .withColumn(PRICE_SQ_FT, col(PRICE_SQ_FT).cast("decimal(10,2)"))
+                .withColumn(PRICE, col(PRICE).cast("decimal(10,0)"));
+
+        System.out.println("=== Print out casted schema ===");
+        castedHouses.printSchema();
+
+        System.out.println("=== Group by location... ===");
+        System.out.println("=== Aggregate by average price per sq ft and max price... ===");
+        System.out.println("=== Order by descending average price per sq ft ===");
+        RelationalGroupedDataset datasetGroupByLocation = castedHouses.groupBy(LOCATION);
+        datasetGroupByLocation
+                .agg(format_number(avg(PRICE_SQ_FT), 2).as("Av. Price per sq ft"),
+                     format_number(max(PRICE), 0).as("Max. Price"))
+                .orderBy(avg(PRICE_SQ_FT).desc())
+                .show();
+
+        session.stop();
+    }
+
 }
