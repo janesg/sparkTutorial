@@ -1,6 +1,7 @@
 # sparkTutorial
-Project source code for James Lee's Aparch Spark with Java course.
 
-Check out the full list of DevOps and Big Data courses that James and Tao teach.
+Exercises and solutions for Udemy course:
 
-https://www.level-up.one/courses/
+* Apache Spark 2.0 with Java -Learn Spark from a Big Data Guru
+
+    * https://www.udemy.com/apache-spark-course-with-java/
